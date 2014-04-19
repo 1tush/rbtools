@@ -602,7 +602,6 @@ class Post(Command):
             except APIError, e:
                 raise CommandError(
                     "Error updating review request draft: %s" % e)
-
         return review_request.id, review_request.absolute_url
 
     def get_revisions(self):

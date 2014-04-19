@@ -261,11 +261,12 @@ class MercurialClient(SCMClient):
 
             if not outgoing:
                 return result
-
-            result['parent_base'] = self._execute(
+            possible_parent_bases = self._execute(
                 ['hg', 'parents', '--hidden', '-r', outgoing[0][1],
-                 '--template', '{node|short}']).split()[0]
-            logging.debug('Identified %s as parent base', result['parent_base'])
+                 '--template', '{node|short}']).split()
+            if len(possible_parent_bases) > 0:
+                result['parent_base'] = possible_parent_bases[0]
+                logging.debug('Identified %s as parent base', result['parent_base'])
 
         return result
 
@@ -342,10 +343,14 @@ class MercurialClient(SCMClient):
             diff_cmd.append('--svn')
 
         diff_cmd += files
-
-        diff = self._execute(
-            diff_cmd + ['-r', revisions['base'], '-r', revisions['tip']],
-            env=self._hg_env)
+        if revisions['base'] == revisions['tip']:
+            diff = self._execute(
+                diff_cmd + ['-c', revisions['tip']],
+                env=self._hg_env)
+        else:
+            diff = self._execute(
+                diff_cmd + ['-r', revisions['base'], '-r', revisions['tip']],
+                env=self._hg_env)
 
         if 'parent_base' in revisions:
             base_commit_id = revisions['parent_base']
@@ -355,7 +360,6 @@ class MercurialClient(SCMClient):
         else:
             base_commit_id = revisions['base']
             parent_diff = None
-
         return {
             'diff': diff,
             'parent_diff': parent_diff,
