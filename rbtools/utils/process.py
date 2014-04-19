@@ -30,6 +30,26 @@ def execute(command,
     """
     Utility function to execute a command and return the output.
     """
+    def run():
+        if sys.platform.startswith('win'):
+            p = subprocess.Popen(command,
+                                 stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=errors_output,
+                                 shell=False,
+                                 universal_newlines=translate_newlines,
+                                 env=env)
+        else:
+            p = subprocess.Popen(command,
+                                 stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=errors_output,
+                                 shell=False,
+                                 close_fds=True,
+                                 universal_newlines=translate_newlines,
+                                 env=env)
+        return p
+
     if isinstance(command, list):
         logging.debug('Running: ' + subprocess.list2cmdline(command))
     else:
@@ -40,31 +60,20 @@ def execute(command,
     else:
         env = os.environ.copy()
 
-    env['LC_ALL'] = 'C'
-    env['LANGUAGE'] = 'C'
 
     if with_errors:
         errors_output = subprocess.STDOUT
     else:
         errors_output = subprocess.PIPE
+    try:
+        env['LC_ALL'] = 'en_US.UTF-8'
+        env['LANGUAGE'] = 'en_US.UTF-8'
+        p = run()
+    except Exception, e:
+        env['LC_ALL'] = 'C'
+        env['LANGUAGE'] = 'C'
+        p = run()
 
-    if sys.platform.startswith('win'):
-        p = subprocess.Popen(command,
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             stderr=errors_output,
-                             shell=False,
-                             universal_newlines=translate_newlines,
-                             env=env)
-    else:
-        p = subprocess.Popen(command,
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             stderr=errors_output,
-                             shell=False,
-                             close_fds=True,
-                             universal_newlines=translate_newlines,
-                             env=env)
     if split_lines:
         data = p.stdout.readlines()
     else:
@@ -80,5 +89,4 @@ def execute(command,
 
     if rc and none_on_ignored_error:
         return None
-
     return data
