@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from distutils.util import strtobool
 
@@ -12,11 +13,14 @@ def confirm(question):
     'Yes' values: y, yes, t, true, on, 1
     'No' values: n, no , f, false, off, 0
     """
+    if isinstance(question, unicode):
+        question = question.encode(sys.stdout.encoding)
     while True:
         try:
             answer = raw_input("%s [Yes/No]: " % question).lower()
             return strtobool(answer)
-        except ValueError:
+        except ValueError, e:
+            raise e
             print '%s is not a valid answer.' % answer
 
 
