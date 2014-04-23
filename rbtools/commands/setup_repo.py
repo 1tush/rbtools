@@ -3,6 +3,7 @@ import os
 from rbtools.commands import Command, CommandError, Option
 from rbtools.utils.console import confirm
 from rbtools.utils.filesystem import CONFIG_FILE
+import difflib
 
 
 class SetupRepo(Command):
@@ -42,19 +43,20 @@ class SetupRepo(Command):
         # selection is made, immediately return the selected repo.
         try:
             while True:
-                for repo in repositories:
-                    is_match = (
-                        tool_name == repo.tool and
-                        repository_info.path in
-                        (repo['path'], getattr(repo, 'mirror_path', '')))
+                same_tool_repositories = filter(lambda x: x.tool == tool_name, repositories)
+                repo_paths = {url:repo
+                    for repo in same_tool_repositories
+                    for url in (repo['path'], getattr(repo, 'mirror_path', ''))
+                }
+                closest_path = difflib.get_close_matches(repository_info.path, repo_paths.keys(), n=1)
+                for path in closest_path:
+                    repo = repo_paths[path]
+                    question = (
+                        "Use the %s repository '%s' (%s)?"
+                        % (tool_name, repo['name'], repo['path']))
 
-                    if is_match:
-                        question = (
-                            "Use the %s repository '%s' (%s)?"
-                            % (tool_name, repo['name'], repo['path']))
-
-                        if confirm(question):
-                            return repo
+                    if confirm(question):
+                        return repo
 
                 repositories = repositories.get_next()
         except StopIteration:

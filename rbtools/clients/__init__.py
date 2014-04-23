@@ -1,7 +1,6 @@
 import logging
 import pkg_resources
 import sys
-import re
 
 from rbtools.utils.process import die, execute
 
@@ -233,7 +232,6 @@ class RepositoryInfo(object):
     """
     def __init__(self, path=None, base_path=None, supports_changesets=False,
                  supports_parent_diffs=False):
-        path = re.sub('://(.+?@)?', '://', path)
         self.path = path
         self.base_path = base_path
         self.supports_changesets = supports_changesets
