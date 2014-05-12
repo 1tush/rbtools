@@ -1,6 +1,6 @@
 import os
 
-from rbtools.commands import Command, CommandError, Option
+from rbtools.commands import Command, CommandError
 from rbtools.utils.console import confirm
 from rbtools.utils.filesystem import CONFIG_FILE
 import difflib
@@ -29,6 +29,7 @@ class SetupRepo(Command):
     args = ""
     option_list = [
         Command.server_options,
+        Command.perforce_options,
     ]
 
     def prompt_rb_repository(self, tool_name, repository_info, api_root):
@@ -43,12 +44,19 @@ class SetupRepo(Command):
         # selection is made, immediately return the selected repo.
         try:
             while True:
-                same_tool_repositories = filter(lambda x: x.tool == tool_name, repositories)
-                repo_paths = {url:repo
-                    for repo in same_tool_repositories
-                    for url in (repo['path'], getattr(repo, 'mirror_path', ''))
-                }
-                closest_path = difflib.get_close_matches(repository_info.path, repo_paths.keys(), n=1)
+                repo_paths = {}
+                for repository in repositories:
+                    if repository.tool != tool_name:
+                        continue
+
+                    repo_paths[repository['path']] = repository
+                    if 'mirror_path' in repository:
+                        repo_paths[repository['mirror_path']] = repository
+
+                closest_path = difflib.get_close_matches(repository_info.path,
+                                                         repo_paths.keys(),
+                                                         n=1)
+
                 for path in closest_path:
                     repo = repo_paths[path]
                     question = (
